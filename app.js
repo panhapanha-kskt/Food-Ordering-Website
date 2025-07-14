@@ -9,6 +9,11 @@ const mysql = require("mysql");
 
 // Initialize Express App
 const app = express();
+app.use((req, res, next) => {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  next();
+});
+
 
 // Set View Engine and Middleware
 app.set("view engine", "ejs");
@@ -20,10 +25,11 @@ app.use(fileUpload());
 
 // Database Connection
 const connection = mysql.createConnection({
-  host: "localhost",
-  user: "root_2",
-  password: "1@HelloMoto",
+  host: "foodorderingwesitedb.cdiegmgy04sq.ap-southeast-2.rds.amazonaws.com",
+  user: "admin",
+  password: "Pheakdey09",
   database: "foodorderingwesitedb",
+  port: 3306
 });
 connection.connect();
 
@@ -420,27 +426,23 @@ function updatePassword(req, res) {
 function renderAdminHomepage(req, res) {
   const userId = req.cookies.cookuid;
   const userName = req.cookies.cookuname;
+
   connection.query(
-    "SELECT admin_id, admin_name FROM admin WHERE admin_email = ? and admin_name = ?",
+    "SELECT admin_id, admin_name FROM admin WHERE admin_id = ? AND admin_name = ?",
     [userId, userName],
     function (error, results) {
       if (!error && results.length) {
+        // Optionally, fetch menu or dashboard data here if needed
         res.render("adminHomepage", {
           username: userName,
           userid: userId,
-          items: results,
+          items: results, // You may want to replace this with relevant data
         });
       } else {
         res.render("admin_signin");
       }
     }
   );
-}
-
-// Admin Sign-in
-
-function renderAdminSignInPage(req, res) {
-  res.render("admin_signin");
 }
 
 function adminSignIn(req, res) {
@@ -451,12 +453,13 @@ function adminSignIn(req, res) {
     [email, password],
     function (error, results) {
       if (error || !results.length) {
-        res.render("/admin_signin");
+        res.render("admin_signin");
       } else {
         const { admin_id, admin_name } = results[0];
         res.cookie("cookuid", admin_id);
         res.cookie("cookuname", admin_name);
-        res.render("adminHomepage");
+        res.redirect("/adminHomepage");
+
       }
     }
   );
@@ -664,8 +667,13 @@ function changePrice(req, res) {
 
 // Logout
 function logout(req, res) {
-  res.clearCookie();
-  return res.redirect("/signin");
+  res.clearCookie("cookuid");
+  res.clearCookie("cookuname");
+  res.redirect("/signin"); // ✅ Only once
+}
+
+function renderAdminSignInPage(req, res) {
+  res.render("admin_signin");
 }
 
 module.exports = app;
